@@ -3,8 +3,14 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+public delegate void TextOutputHandler(string text);
+
 public class SceneController : MonoBehaviour
 {
+    private HUDController hUDController;
+    private int totalPoints;
+
+
     [SerializeField]
     internal float playerSpeed;
 
@@ -17,6 +23,7 @@ public class SceneController : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        hUDController = FindObjectOfType<HUDController>();
         playerSpeed = 10;
         screenBounds = GetScreenBounds();
         StartCoroutine(SpawnEnemies());
@@ -39,14 +46,33 @@ public class SceneController : MonoBehaviour
             var horizontalPosition = UnityEngine.Random.Range(-screenBounds.x, screenBounds.x);
             var spawnPosition = new Vector2(horizontalPosition, screenBounds.y);
 
-            Instantiate(enemyPrefab, spawnPosition, Quaternion.identity);
+            var enemy = Instantiate(enemyPrefab, spawnPosition, Quaternion.identity);
+
+            enemy.EnemyEscaped += EnemyAtBottom;
+            enemy.EnemyKilled += EnemyKilled; 
+
             yield return wait;
         }
     }
 
+    private void EnemyKilled(int pointValue)
+    {
+        totalPoints += pointValue;
+    }
+
+    private void EnemyAtBottom(EnemyController enemy)
+    {
+        Destroy(enemy.gameObject);
+        hUDController.scoreText.text = totalPoints.ToString();
+    }
+
     public void KillObject(IKillable killable)
     {
-        Debug.LogWarningFormat("{0} killed by Game Scene Controller", killable.GetName());
         killable.Kill();
+    }
+
+    public void OutputText(string output)
+    {
+        Debug.LogFormat("{0} output by Scene Controller", output);
     }
 }

@@ -1,21 +1,36 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+public delegate void EnemyEscapedHandler(EnemyController enemy);
+
 public class EnemyController : Shape, IKillable
 {
+    public event EnemyEscapedHandler EnemyEscaped;
+    public event Action<int> EnemyKilled;
+
     // Start is called before the first frame update
     protected override void Start()
     {
         base.Start();
         Name = "Enemy";
-        Debug.Log("Enemy Spawned");
     }
 
     // Update is called once per frame
     void Update()
     {
         MoveEnemy();
+    }
+
+    private void OnCollisionEnter2D(Collision2D collision)
+    {
+        if (EnemyKilled != null)
+        {
+            EnemyKilled(10);
+            Destroy(collision.gameObject);
+            Destroy(gameObject);
+        }
     }
 
     private void MoveEnemy()
@@ -25,8 +40,13 @@ public class EnemyController : Shape, IKillable
 
         if (bottom < -gameSceneController.screenBounds.y)
         {
-            gameSceneController.KillObject(this);
+            EnemyEscaped?.Invoke(this);
         }
+    }
+
+    private void InternalOutputText(string internalOutputText)
+    {
+        Debug.LogFormat("{0} output by Enemy Controller", internalOutputText);
     }
 
     public void Kill()
